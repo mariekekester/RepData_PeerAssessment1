@@ -1,0 +1,175 @@
+---
+title: "Activity Data Analysis"
+author: "Marieke Kester"
+date: "March 12, 2015"
+output: 
+        html_document:
+        keep_md: true
+---
+
+This is an R Markdown document that will load the activity.csv file, run some basic analyses and create some exploratory plots. This analysis requires the use of the lubridate package. 
+
+First we will **load the data** and look at a **summary** of the variables:
+
+```{r load data}
+activity <- read.csv("./activity.csv")
+summary(activity)
+```
+
+We see that there are 2304 NAs in the steps variable, so we may have to deal with that later. Also, because the date variable is currently coded as a factor variable, we'll use the lubridate package to **transform date** into a true date variable
+
+```{r date}
+library(lubridate)
+activity$date <- ymd(activity$date)
+summary(activity)
+```
+
+###To analyze the mean total number of steps per day
+
+Here, we **calculate the total number of steps taken per day** using the aggregate function and then print out the new dataset summarized by date. We can ignore the missing data in the steps variable for this portion of the analysis (omitting the NAs is the default in the aggregate function). 
+
+```{r aggregate by date}
+by_date <- aggregate(steps ~ date, data=activity, sum)
+by_date
+```
+
+Then we make a histogram (not barplot!) of the total number of steps taken each day
+
+```{r hist}
+hist(by_date$steps, breaks=20, xlab="Total number steps per day", main="", col="dark grey")
+```
+
+
+This histogram shows the frequency of days with various total numbers of steps taken on that day. For example, there were two days where the number of steps was between 0 and 1000. Looking at the above print out of the data summed by day, we can tell that these two days are October 2nd (total = 126 steps) and November 15th (total = 41 steps).
+
+
+Finally for this section, we calculate and report the mean and median of the total number of steps taken per day after removing the NAs
+```{r mean}
+mean(by_date$steps, na.rm=TRUE)
+median(by_date$steps, na.rm=TRUE)
+```
+
+Our second objective is to assess:
+
+
+###What is the average daily activity pattern?
+
+We accomplish this by first aggregating the average number of steps in each 5 minute interval across all the days in the dataset
+
+```{r aggregate by interval}
+by_interval<- aggregate(steps ~ interval, data=activity, mean)
+```
+
+Then we make a time series plot showing the 5-minute intervals on the x-axis and the average number of steps averaged across all days in that per interval on the y-axis
+
+```{r time series plot}
+plot(by_interval$steps ~ by_interval$interval, typ="l", lwd=2, xlab="5-min Interval", ylab="Average number of steps")
+```
+
+
+Finally, we'd like to know which 5-minute interval, averaged across all the days in the dataset, contains the maximum number of steps
+
+```{r max avg steps}
+which(by_interval$steps == max(by_interval$steps))
+by_interval[104,]
+```
+So, we know that interval number 835 has the most steps with an average of 206.17 steps taken in that interval averaged over all the days of the study
+
+
+###Imputing missing values
+Because the presence of missing data may introduce bias into some calculations or summaries of the data and this dataset has some missing observations (coded as NA), we will need to fill them in somehow.
+
+First we will **calculate the number of missing observations**
+```{r NA}
+summary(activity$steps)
+```
+So we now know that there are 2304 day/interval observations (rows in the dataset) that are missing the number of steps taken. To take care of this we will need to impute the missing values with the average number of steps taken per 5-minute interval as calculated above.
+
+We start by renaming the steps variable from the byinterval dataset so that we can append byinterval onto the original dataset without getting the two steps variables confused
+
+```{r rename}
+names(by_interval)[2] <- "avg.steps"
+```
+
+Now we combine the byinterval dataset with the activity dataset and check the names to make sure avg.steps is present
+
+```{r merge}
+combine <- merge(activity, by_interval)
+names(combine)
+```
+Now we have an average steps per interval variable for each observation in the original dataset
+
+
+Now we **impute**, taking any rows from the combine dataset where there is NA in the steps variable and replace the NA with the avg.step from the same row (rounded so there are no decimals so these imputed observations look like the other observations). We then delete the avg.steps variable from the combine dataset and then look at to make sure everything went as expected.
+
+```{r impute}
+combine$steps[is.na(combine$steps)] <- round(combine$avg.steps[is.na(combine$steps)], 0)
+#then delete the average steps column to get the original dataset back
+combine$avg.steps <- NULL 
+summary(combine)
+```
+Now there are no more missing values in the combine dataset
+
+
+Next we make a **histogram of the total number of steps taken each day**. First we need to use the aggregate function again to create the total steps per day dataset.
+
+```{r nona_aggregate}
+by_date_nona <- aggregate(steps ~ date, data=combine, FUN=sum)
+hist(by_date_nona$steps, breaks=20, xlab="Total number steps per day", main="", col="dark grey")
+```
+
+
+This histogram looks very similar to the one from before. Let's calculate and report the mean and median total number of steps taken per day just as we did before, but now using the imputed dataset to **compare the mean and median** of the imputed dataset to those from the original dataset.
+
+```{r descriptives}
+mean(by_date_nona$steps)
+median(by_date_nona$steps)
+```
+Here were the mean and median without imputation
+
+```{r print}
+mean(by_date$steps, na.rm=TRUE)
+median(by_date$steps, na.rm=TRUE)
+```
+
+We see that the two sets of descriptive stats are very, very close. This is excellent since it means that excluding the missing values and imputing them using the average steps per 5-min interval both resulted in similar means and medians. Now we can feel confident using our imputed dataset for further analyses that require having no missings.
+
+
+###Differences in activity patterns between weekdays and weekends
+For this analysis we will use the imputed dataset
+
+
+To start, we **create a new weekdays factor variable** using the weekdays and factor functions
+```{r weekdays}
+combine$weekday <- weekdays(combine$date)
+names(combine)
+combine$weekday <- as.factor(combine$weekday)
+str(combine$weekday)
+```
+Then we change the levels of this factor variable into **"weekend" and "weekday"**
+```{r levels}
+levels(combine$weekday) <- list(weekend =c("Saturday", "Sunday"), weekday = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
+levels(combine$weekday)
+```
+
+Now to see the differences between the average number of steps taken between weekday days or weekend days, we will use the aggregate function on subsets of the data to **calculate the average steps per interval for weekends or weekdays**
+```{r day_aggregate}
+weekend <- subset(combine, subset=combine$weekday=="weekend")
+weekday <- subset(combine, subset=combine$weekday=="weekday")
+weekend_by_interval<- aggregate(steps ~ interval, data=weekend, mean)
+weekday_by_interval<- aggregate(steps ~ interval, data=weekday, mean)
+```
+
+Now we visualize the differences via a **panel plot** containing a time series plot (type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+
+```{r plots}
+par(mar=c(2,1,1,1), oma=c(2,2,0,0), mfrow=c(2,1))
+plot(weekend_by_interval$steps ~ weekend_by_interval$interval, typ="l", lwd=2, main = "Weekend", xlab="", ylab="")
+plot(weekday_by_interval$steps ~ weekday_by_interval$interval, typ="l", lwd=2, main = "Weekday", xlab="", ylab="")
+?mtext
+mtext("Average number of steps", side=2, outer=TRUE, line=1)
+mtext("5-min Interval", side=1, outer=TRUE, line=0)
+```
+
+
+We can see that there are large differences in the average number of steps per 5-min interval between weekends and weekdays. On average over the study people took  more steps in intervals between 1000 and 2000 (i.e., the afternoons) of the weekend days.
