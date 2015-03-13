@@ -2,7 +2,9 @@
 title: "Activity Data Analysis"
 author: "Marieke Kester"
 date: "March 12, 2015"
-output: html_document
+output: 
+        html_document:
+        keep_md: true
 ---
 
 This is an R Markdown document that will load the activity.csv file, run some basic analyses and create some exploratory plots. This analysis requires the use of the lubridate package. 
@@ -121,6 +123,8 @@ hist(by_date$steps, breaks=20, xlab="Total number steps per day", main="", col="
 ```
 
 ![plot of chunk hist](figure/hist-1.png) 
+
+
 This histogram shows the frequency of days with various total numbers of steps taken on that day. For example, there were two days where the number of steps was between 0 and 1000. Looking at the above print out of the data summed by day, we can tell that these two days are October 2nd (total = 126 steps) and November 15th (total = 41 steps).
 
 
@@ -162,6 +166,7 @@ plot(by_interval$steps ~ by_interval$interval, typ="l", lwd=2, xlab="5-min Inter
 ```
 
 ![plot of chunk time series plot](figure/time series plot-1.png) 
+
 
 Finally, we'd like to know which 5-minute interval, averaged across all the days in the dataset, contains the maximum number of steps
 
@@ -252,6 +257,7 @@ hist(by_date_nona$steps, breaks=20, xlab="Total number steps per day", main="", 
 ```
 
 ![plot of chunk nona_aggregate](figure/nona_aggregate-1.png) 
+
 
 This histogram looks very similar to the one from before. Let's calculate and report the mean and median total number of steps taken per day just as we did before, but now using the imputed dataset to **compare the mean and median** of the imputed dataset to those from the original dataset.
 
@@ -349,4 +355,6 @@ mtext("5-min Interval", side=1, outer=TRUE, line=0)
 ```
 
 ![plot of chunk plots](figure/plots-1.png) 
+
+
 We can see that there are large differences in the average number of steps per 5-min interval between weekends and weekdays. On average over the study people took  more steps in intervals between 1000 and 2000 (i.e., the afternoons) of the weekend days.

@@ -2,7 +2,9 @@
 title: "Activity Data Analysis"
 author: "Marieke Kester"
 date: "March 12, 2015"
-output: html_document
+output: 
+        html_document:
+        keep_md: true
 ---
 
 This is an R Markdown document that will load the activity.csv file, run some basic analyses and create some exploratory plots. This analysis requires the use of the lubridate package. 
@@ -36,6 +38,8 @@ Then we make a histogram (not barplot!) of the total number of steps taken each 
 ```{r hist}
 hist(by_date$steps, breaks=20, xlab="Total number steps per day", main="", col="dark grey")
 ```
+
+
 This histogram shows the frequency of days with various total numbers of steps taken on that day. For example, there were two days where the number of steps was between 0 and 1000. Looking at the above print out of the data summed by day, we can tell that these two days are October 2nd (total = 126 steps) and November 15th (total = 41 steps).
 
 
@@ -61,6 +65,7 @@ Then we make a time series plot showing the 5-minute intervals on the x-axis and
 ```{r time series plot}
 plot(by_interval$steps ~ by_interval$interval, typ="l", lwd=2, xlab="5-min Interval", ylab="Average number of steps")
 ```
+
 
 Finally, we'd like to know which 5-minute interval, averaged across all the days in the dataset, contains the maximum number of steps
 
@@ -113,6 +118,7 @@ by_date_nona <- aggregate(steps ~ date, data=combine, FUN=sum)
 hist(by_date_nona$steps, breaks=20, xlab="Total number steps per day", main="", col="dark grey")
 ```
 
+
 This histogram looks very similar to the one from before. Let's calculate and report the mean and median total number of steps taken per day just as we did before, but now using the imputed dataset to **compare the mean and median** of the imputed dataset to those from the original dataset.
 
 ```{r descriptives}
@@ -164,4 +170,6 @@ plot(weekday_by_interval$steps ~ weekday_by_interval$interval, typ="l", lwd=2, m
 mtext("Average number of steps", side=2, outer=TRUE, line=1)
 mtext("5-min Interval", side=1, outer=TRUE, line=0)
 ```
+
+
 We can see that there are large differences in the average number of steps per 5-min interval between weekends and weekdays. On average over the study people took  more steps in intervals between 1000 and 2000 (i.e., the afternoons) of the weekend days.
